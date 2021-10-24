@@ -1,12 +1,13 @@
 import cv2
 import numpy as np
 from Tabuleiro.subimages import SubImages
-from Util.util import ratio
+from Util.util import calcHomography, ratio, color_white, debug
 from Velha import jogoDaVelha
 
 captura = cv2.VideoCapture(0)
 calibrado = False
 encerrar = False
+debug_flag = False
 xis = cv2.imread('x.png')
 
 _, frame_teste = captura.read()
@@ -28,56 +29,42 @@ while (calibrado is False and encerrar is False):
 
 base_image = frame_orig
 base_nomr = np.linalg.norm(base_image)
+
 orb_base = cv2.ORB_create()
 b_keypoints, b_des = orb_base.detectAndCompute(base_image, None)
+img_rotacionada = frame_orig
 
 mvCount = [0]*9
 jogo = jogoDaVelha.JogoDaVelha()
 
 while(encerrar is False):
-  ret, frame_orig = captura.read()
-  frame = frame_orig
+  _, frame_orig = captura.read()
 
-  orb_frame = cv2.ORB_create()
-  f_keypoints, f_des = orb_frame.detectAndCompute(frame, None)
-
-  matcher = cv2.BFMatcher()
-  matches = matcher.match(f_des, b_des)
-
-  img_matches = cv2.drawMatches(frame, f_keypoints, base_image, b_keypoints, matches[:20],None)
-
-  matches.sort(key=lambda x: x.distance, reverse=False)
-  numGoodMatches = int(len(matches) * 0.15)
-  matches = matches[:numGoodMatches]
-  points1 = np.zeros((len(matches), 2), dtype=np.float32)
-  points2 = np.zeros((len(matches), 2), dtype=np.float32)
-  
-  for i, match in enumerate(matches):
-    points1[i, :] = f_keypoints[match.queryIdx].pt
-    points2[i, :] = b_keypoints[match.trainIdx].pt
+  points1, points2, img_matches = calcHomography(base_image, frame_orig, b_des, b_keypoints)
 
   try:
-    h, _ = cv2.findHomography(points1, points2, cv2.RANSAC)
+    homography, _ = cv2.findHomography(points1, points2, cv2.RANSAC)
     height, width, _ = base_image.shape
-    temp = cv2.warpPerspective(frame, h, (width, height))
+    temp = cv2.warpPerspective(frame_orig, homography, (width, height))
     if ratio(np.linalg.norm(temp), base_nomr) > 0.8: img_rotacionada = temp
 
   except:
-    print('deu ruim\n')
+    print('Calculo inicial da homografia falhou')
 
-  cv2.imshow('teste2', img_rotacionada)
-  cv2.imshow('teste', img_matches)
+  debug('teste2', img_rotacionada, debug_flag)
+  debug('teste', img_matches, debug_flag)
 
-  arr = si.subimages(img_rotacionada)
+  img_array = si.subimages(img_rotacionada)
 
-  for i in range(len(arr)):
-    cv2.imshow(f"elem {i}", arr[i])
-    maxval = cv2.minMaxLoc(cv2.matchTemplate(arr[i], xis, cv2.TM_CCOEFF_NORMED))[1]
+  for i in range(len(img_array)):
+    debug(f"elem {i}", img_array[i], debug_flag)
+    maxval = cv2.minMaxLoc(cv2.matchTemplate(img_array[i], xis, cv2.TM_CCOEFF_NORMED))[1]
+
     if maxval > 0.4: 
-      # print(f'Match no {i}')
       mvCount[i]+=1
       if mvCount[i] == 3:
         mvCount[i] = 0
+
         try:
           jogo.jogadaHumano((i//3, i%3))
         except Exception as err:
@@ -85,8 +72,19 @@ while(encerrar is False):
         else:
           jogo.jogadaMaquina()
           print(jogo.jogo)
+
     else:
       mvCount[i] = 0
+
+  try:
+    homography_inverse = np.linalg.inv(homography)
+    detransformed = cv2.perspectiveTransform(np.array([si.contorno()], dtype=np.float32), homography_inverse)
+
+    linhas = si.desenhaContorno(frame_orig, detransformed[0])
+    cv2.imshow("revertida-reversa", linhas)
+
+  except Exception as err:
+    print(err)
 
   key = cv2.waitKey(30)
   if key == 27:

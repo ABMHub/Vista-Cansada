@@ -47,3 +47,15 @@ class SubImages:
         ret.append(img[self.y[i]:self.y[i+1], self.x[j]:self.x[j+1]])
         
     return ret
+
+  def contorno(self):
+    return [[self.x[0], self.y[0]], [self.x[0], self.y[3]], [self.x[3], self.y[3]], [self.x[3], self.y[0]]]
+
+  def desenhaContorno(self, img, points):
+    color = (255, 255, 255)
+    img = cv2.line(img, np.array(points[0], np.int32), np.array(points[1], np.int32), color)
+    img = cv2.line(img, np.array(points[1], np.int32), np.array(points[2], np.int32), color)
+    img = cv2.line(img, np.array(points[2], np.int32), np.array(points[3], np.int32), color)
+    img = cv2.line(img, np.array(points[3], np.int32), np.array(points[0], np.int32), color)
+
+    return img
