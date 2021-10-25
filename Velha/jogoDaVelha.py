@@ -17,8 +17,9 @@ class JogoDaVelha:
         elif p == 0: p = elem
         elif p != elem: break
         if coluna == 2: 
-          self.ganhador = (p, 0)
+          self.ganhador = (p, [[linha, 0], [linha, 2]])
           return self.ganhador
+      p = 0
 
     p = 0
     for coluna in range(3):
@@ -28,8 +29,9 @@ class JogoDaVelha:
         elif p == 0: p = elem
         elif p != elem: break
         if linha == 2:
-          self.ganhador = (p, 1)
+          self.ganhador = (p, [[0, coluna], [2, coluna]])
           return self.ganhador
+      p = 0
 
     p = 0
     for diagonal in range(3):
@@ -38,7 +40,7 @@ class JogoDaVelha:
       elif p == 0: p = elem
       elif p != elem: break
       if diagonal == 2:
-        self.ganhador = (p, 2)
+        self.ganhador = (p, [[0, 0], [2, 2]])
         return self.ganhador
 
     p = 0
@@ -50,13 +52,14 @@ class JogoDaVelha:
       elif p == 0: p = elem
       elif p != elem: break
       if d1 == 2: 
-        self.ganhador = (p, 3)
+        self.ganhador = (p, [[0, 2], [2, 0]])
         return self.ganhador
       d1 += 1
       d2 -= 1
 
     if self.movimentos == 9:
-      return (3, 0)
+      self.ganhador = (3, 0)
+      return self.ganhador
 
     return (0, 0)
 

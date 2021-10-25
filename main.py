@@ -7,7 +7,7 @@ from Velha import jogoDaVelha
 captura = cv2.VideoCapture(0)
 calibrado = False
 encerrar = False
-debug_flag = False
+debug_flag = True
 xis = cv2.imread('x.png')
 
 _, frame_teste = captura.read()
@@ -18,8 +18,9 @@ print("altura =", larg_frame, "largura =", alt_frame) # 640 480 nos testes
 
 while (calibrado is False and encerrar is False):
   _, frame_orig = captura.read()
-  frame_orig = si.linhasVelha(frame_orig)
-  cv2.imshow('webcam', frame_orig)
+  linhas = frame_orig.copy()
+  linhas = si.linhasVelha(linhas)
+  cv2.imshow('webcam', linhas)
 
   key = cv2.waitKey(30)
   if key == 32:
@@ -27,7 +28,7 @@ while (calibrado is False and encerrar is False):
   if key == 27:
     encerrar = True
 
-base_image = frame_orig
+base_image = si.campo(frame_orig)
 base_nomr = np.linalg.norm(base_image)
 
 orb_base = cv2.ORB_create()
@@ -46,7 +47,7 @@ while(encerrar is False):
     homography, _ = cv2.findHomography(points1, points2, cv2.RANSAC)
     height, width, _ = base_image.shape
     temp = cv2.warpPerspective(frame_orig, homography, (width, height))
-    if ratio(np.linalg.norm(temp), base_nomr) > 0.8: img_rotacionada = temp
+    if ratio(np.linalg.norm(temp), base_nomr) > 0.8: img_rotacionada = temp # se o negocio travar ele continuar contando os 3 frames
 
   except:
     print('Calculo inicial da homografia falhou')
@@ -76,16 +77,37 @@ while(encerrar is False):
     else:
       mvCount[i] = 0
 
+  bolinhas = []
+  for i in range(3):
+    for j in range(3):
+      if jogo.jogo[i][j] == 2:
+        bolinhas.append(si.center_resized[(i*3)+j])
+
   try:
     homography_inverse = np.linalg.inv(homography)
-    detransformed = cv2.perspectiveTransform(np.array([si.contorno()], dtype=np.float32), homography_inverse)
+    borda = cv2.perspectiveTransform(np.array([si.contorno()], dtype=np.float32), homography_inverse)
+    img_final = si.desenhaContorno(frame_orig, borda[0])
 
-    linhas = si.desenhaContorno(frame_orig, detransformed[0])
-    cv2.imshow("revertida-reversa", linhas)
+    if len(bolinhas) != 0:
+      circulos = cv2.perspectiveTransform(np.array([bolinhas], dtype=np.float32), homography_inverse)
+      for circulo in circulos[0]:
+        img_final = cv2.circle(img_final, (int(circulo[0]), int(circulo[1])), 45, color_white, 3)
+
+    cv2.imshow("revertida-reversa", img_final)
 
   except Exception as err:
     print(err)
 
+  if (jogo.ganhador != (0, 0)): break
+
   key = cv2.waitKey(30)
   if key == 27:
     encerrar = True
+
+if jogo.ganhador[0] != 3:
+  print(jogo.ganhador)
+  img_final = si.ganhador(img_final, jogo.ganhador, homography_inverse)
+  cv2.imshow("revertida-reversa", img_final)
+
+cv2.waitKey()
+cv2.destroyAllWindows()
