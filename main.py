@@ -8,13 +8,16 @@ captura = cv2.VideoCapture(0)
 calibrado = False
 encerrar = False
 debug_flag = True
-xis = cv2.imread('x.png')
+xis = cv2.imread('XIS_800_800.png')
 
 _, frame_teste = captura.read()
 si = SubImages(frame_teste)
 alt_frame = np.size(frame_teste, 0)
 larg_frame = np.size(frame_teste, 1)
 print("altura =", larg_frame, "largura =", alt_frame) # 640 480 nos testes
+
+div = int(min(alt_frame, larg_frame)/6.4)
+xis = cv2.resize(xis, (div, div))
 
 while (calibrado is False and encerrar is False):
   _, frame_orig = captura.read()
@@ -48,6 +51,7 @@ while(encerrar is False):
     height, width, _ = base_image.shape
     temp = cv2.warpPerspective(frame_orig, homography, (width, height))
     if ratio(np.linalg.norm(temp), base_nomr) > 0.8: img_rotacionada = temp # se o negocio travar ele continuar contando os 3 frames
+    else: mvCount = [0 for i in range(9)]
 
   except:
     print('Calculo inicial da homografia falhou')
