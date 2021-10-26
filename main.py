@@ -1,3 +1,4 @@
+import time
 import cv2
 import numpy as np
 from Tabuleiro.subimages import SubImages
@@ -28,6 +29,9 @@ while (calibrado is False and encerrar is False):
   key = cv2.waitKey(30)
   if key == 32:
     calibrado = True
+  if key == 115:
+    tempo = time.time()
+    cv2.imwrite(f"relatorio/{tempo}-calibracao.png", linhas)
   if key == 27:
     encerrar = True
 
@@ -43,6 +47,7 @@ jogo = jogoDaVelha.JogoDaVelha()
 
 while(encerrar is False):
   _, frame_orig = captura.read()
+  cv2.imshow('img_base', base_image)
 
   points1, points2, img_matches = calcHomography(base_image, frame_orig, b_des, b_keypoints)
 
@@ -105,6 +110,14 @@ while(encerrar is False):
   if (jogo.ganhador != (0, 0)): break
 
   key = cv2.waitKey(30)
+  if key == 115:
+    tempo = time.time()
+    cv2.imwrite(f"relatorio/{tempo}-matches.png", img_matches)
+    cv2.imwrite(f"relatorio/{tempo}-homo.png", img_rotacionada)
+    for i in range(9):
+      cv2.imwrite(f"relatorio/{tempo}-{i}.png", img_array[i])
+    cv2.imwrite(f"relatorio/{tempo}-final.png", img_final)   
+    
   if key == 27:
     encerrar = True
 
@@ -112,6 +125,8 @@ if jogo.ganhador[0] != 3:
   print(jogo.ganhador)
   img_final = si.ganhador(img_final, jogo.ganhador, homography_inverse)
   cv2.imshow("revertida-reversa", img_final)
+  cv2.imwrite(f"resultado-{tempo}.png", img_final)   
+
 
 cv2.waitKey()
 cv2.destroyAllWindows()
